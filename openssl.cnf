@@ -1,0 +1,22 @@
+[ req ]
+default_bits       = 2048
+distinguished_name = req_distinguished_name
+req_extensions     = v3_req
+x509_extensions    = v3_req
+prompt             = no
+
+[ req_distinguished_name ]
+C  = CN
+ST = Test
+L  = Test
+O  = MyOrg
+OU = MyUnit
+CN = 52.81.226.43
+
+[ v3_req ]
+subjectAltName = @alt_names
+
+[ alt_names ]
+IP.1 = 52.81.226.43
+IP.2 = 172.31.25.74
+
