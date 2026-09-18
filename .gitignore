@@ -1,0 +1,26 @@
+# Local credentials and certificates
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+.env
+.env.*
+!.env.example
+secrets/
+.kube/
+kubeconfig
+kubeconfig.*
+
+# Local deployment configuration and request logs
+deploy/local/
+*.log
+test.txt
+
+# Build output
+/bin/
+/webhook-server
+/webhook-learn
+coverage.out
+*.test
+.DS_Store

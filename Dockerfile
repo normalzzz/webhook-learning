@@ -1,0 +1,23 @@
+FROM public.ecr.aws/docker/library/golang:alpine AS builder
+
+ARG TARGETARCH
+
+RUN go env -w CGO_ENABLED=0
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+
+RUN go mod download
+
+COPY . .
+
+RUN GOARCH=${TARGETARCH} go build -trimpath -ldflags "-s -w -extldflags '-static -fpic'" -o webhook-server main.go
+
+FROM public.ecr.aws/docker/library/alpine
+
+WORKDIR /app
+
+COPY --from=builder --chmod=755 /app/webhook-server /app/webhook-server
+
+ENTRYPOINT ["/app/webhook-server"]

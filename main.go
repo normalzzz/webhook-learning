@@ -1,14 +1,13 @@
 package main
 
 import (
-	// "fmt"
 	"net/http"
-	log "github.com/sirupsen/logrus"
+
 	nested "github.com/antonfisher/nested-logrus-formatter"
+	log "github.com/sirupsen/logrus"
 
-	webhook "xingzhan.io/webhook-learn/pkg"
+	webhook "example.com/webhook-learn/pkg"
 )
-
 
 func init() {
 	log.SetFormatter(&nested.Formatter{
@@ -17,8 +16,10 @@ func init() {
 }
 
 func main() {
-    http.HandleFunc("/", webhook.PodServer)
-    log.Println("Server is running at https://192.168.0.101:8443")
-    // http.ListenAndServe(":8080", nil)
-	http.ListenAndServeTLS(":8443", "cert.pem", "key.pem", nil)
+	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	http.HandleFunc("/", webhook.PodServer)
+	log.Println("Server is running at port 80")
+	log.Fatal(http.ListenAndServe(":80", nil))
 }

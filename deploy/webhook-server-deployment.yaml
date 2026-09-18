@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-server
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: webhook-server
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: webhook-server
+    spec:
+      containers:
+      - image: registry.example.com/demo/webhook-server:latest
+        imagePullPolicy: Always
+        name: webhook-server
+        ports:
+        - containerPort: 80
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%

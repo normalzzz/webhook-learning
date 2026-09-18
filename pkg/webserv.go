@@ -8,12 +8,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	admissionv1 "k8s.io/api/admission/v1"
 
-	// "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 
-	// jsonpatch "github.com/evanphx/json-patch"
 	"encoding/json"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,7 +34,7 @@ func mutate(ar *admissionv1.AdmissionReview) *admissionv1.AdmissionResponse {
 
 	var pod corev1.Pod
 	if err := json.Unmarshal(req.Object.Raw, &pod); err != nil {
-		log.Warnln("Could not unmarshal raw object: %v", err)
+		log.Warn("Could not unmarshal Pod object")
 		return &admissionv1.AdmissionResponse{
 			Result: &metav1.Status{
 				Message: err.Error(),
@@ -44,7 +42,7 @@ func mutate(ar *admissionv1.AdmissionReview) *admissionv1.AdmissionResponse {
 		}
 	}
 
-	log.Infoln("AdmissionReview for Kind=%v, Namespace=%v Name=%v (%v) UID=%v patchOperation=%v UserInfo=%v", req.Kind, req.Namespace, req.Name, pod.Name, req.UID, req.Operation, req.UserInfo)
+	log.Info("Processing Pod admission request")
 
 	annotationMap := make(map[string]string)
 	annotationMap["annotation-injected-by"] = "webhook"
@@ -79,18 +77,8 @@ func mutate(ar *admissionv1.AdmissionReview) *admissionv1.AdmissionResponse {
 }
 
 func PodServer(w http.ResponseWriter, r *http.Request) {
+	log.Info("PodServer request received")
 
-	// body, err := io.ReadAll(r.Body)
-	// if err != nil {
-	//     log.Errorln("Error reading body: %v\n", err)
-	//     return
-	// }
-	// log.Infoln("Method: \n", r.Method)
-	// log.Infoln("URL: \n", r.URL.String())
-	// log.Infoln("Header: \n", r.Header)
-	// log.Infoln("Body: ", string(body))
-
-	// w.Write([]byte("Hello, HTTPS world!"))
 	var body []byte
 
 	if r.Body != nil {
@@ -105,7 +93,7 @@ func PodServer(w http.ResponseWriter, r *http.Request) {
 		// verify the content type is accurate
 		contentType := r.Header.Get("Content-Type")
 		if contentType != "application/json" {
-			log.Warnln("Content-Type=%s, expect application/json", contentType)
+			log.Warn("Invalid Content-Type, expect application/json")
 			http.Error(w, "invalid Content-Type, expect `application/json`", http.StatusUnsupportedMediaType)
 			return
 		}
@@ -113,13 +101,18 @@ func PodServer(w http.ResponseWriter, r *http.Request) {
 		var admissionResponse *admissionv1.AdmissionResponse
 		ar := admissionv1.AdmissionReview{}
 		if _, _, err := deserializer.Decode(body, nil, &ar); err != nil {
-			log.Warnln("Can't decode body: ", err)
+			log.Warn("Cannot decode AdmissionReview")
 			admissionResponse = &admissionv1.AdmissionResponse{
 				Result: &metav1.Status{
 					Message: err.Error(),
 				},
 			}
 		} else {
+			if ar.Request == nil {
+				log.Warn("Missing AdmissionReview request")
+				http.Error(w, "missing AdmissionReview request", http.StatusBadRequest)
+				return
+			}
 			admissionResponse = mutate(&ar)
 		}
 
@@ -140,12 +133,12 @@ func PodServer(w http.ResponseWriter, r *http.Request) {
 		}
 		resp, err := json.Marshal(admissionReview)
 		if err != nil {
-			log.Warnln("Can't encode response: %v", err)
+			log.Warn("Cannot encode response")
 			http.Error(w, fmt.Sprintf("could not encode response: %v", err), http.StatusInternalServerError)
 		}
 		log.Infoln("Ready to write reponse ...")
 		if _, err := w.Write(resp); err != nil {
-			log.Warnln("Can't write response: %v", err)
+			log.Warn("Cannot write response")
 			http.Error(w, fmt.Sprintf("could not write response: %v", err), http.StatusInternalServerError)
 		}
 	}

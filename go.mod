@@ -1,4 +1,4 @@
-module xingzhan.io/webhook-learn
+module example.com/webhook-learn
 
 go 1.24.4
 
